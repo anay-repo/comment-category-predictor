@@ -1,0 +1,6 @@
+lightgbm==4.3.0
+scikit-learn==1.6.1
+numpy
+pandas
+scipy
+joblib
