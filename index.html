@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comment Category Prediction — Anay Singh</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0d14;
+    --bg2:       #111520;
+    --bg3:       #181d2c;
+    --border:    #1e2435;
+    --text:      #e8ecf4;
+    --muted:     #6b7592;
+    --accent:    #5b8dee;
+    --green:     #4ade80;
+    --orange:    #fb923c;
+    --purple:    #a78bfa;
+    --label0:    #4ade80;
+    --label1:    #5b8dee;
+    --label2:    #fb923c;
+    --label3:    #a78bfa;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,13,20,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 56px;
+  }
+  .nav-logo { font-weight: 700; font-size: 0.95rem; color: var(--text); text-decoration: none; letter-spacing: -0.01em; }
+  .nav-logo span { color: var(--accent); }
+  .nav-links { display: flex; gap: 1.5rem; list-style: none; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.875rem; font-weight: 500; transition: color .2s; }
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 88vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 4rem 1.5rem;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(91,141,238,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(91,141,238,0.1); border: 1px solid rgba(91,141,238,0.25);
+    color: var(--accent); border-radius: 999px;
+    padding: 0.35rem 1rem; font-size: 0.8rem; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 1.5rem;
+  }
+  .hero-tag::before { content: '●'; font-size: 0.6rem; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+    margin-bottom: 1rem; max-width: 800px;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+
+  .hero-sub {
+    color: var(--muted); font-size: 1.1rem; max-width: 560px;
+    margin-bottom: 2.5rem; line-height: 1.7;
+  }
+
+  .btn-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1.75rem; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 600; text-decoration: none;
+    transition: all .2s; cursor: pointer; border: none;
+  }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    box-shadow: 0 0 24px rgba(91,141,238,0.3);
+  }
+  .btn-primary:hover { background: #4a7de0; box-shadow: 0 0 32px rgba(91,141,238,0.45); transform: translateY(-1px); }
+  .btn-secondary {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+
+  .hero-stats {
+    display: flex; gap: 3rem; margin-top: 4rem; flex-wrap: wrap; justify-content: center;
+  }
+  .stat { text-align: center; }
+  .stat-num { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; color: var(--text); }
+  .stat-label { font-size: 0.78rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+  /* ── SECTIONS ── */
+  section { padding: 5rem 1.5rem; max-width: 1000px; margin: 0 auto; }
+  .section-label {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem;
+  }
+  h2 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 1rem; }
+  .section-intro { color: var(--muted); font-size: 1rem; max-width: 600px; margin-bottom: 3rem; line-height: 1.8; }
+
+  /* ── CATEGORIES ── */
+  .categories { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .cat-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem;
+    transition: border-color .2s, transform .2s;
+  }
+  .cat-card:hover { transform: translateY(-2px); }
+  .cat-card.c0 { border-top: 3px solid var(--label0); }
+  .cat-card.c1 { border-top: 3px solid var(--label1); }
+  .cat-card.c2 { border-top: 3px solid var(--label2); }
+  .cat-card.c3 { border-top: 3px solid var(--label3); }
+  .cat-emoji { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .cat-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem; }
+  .cat-card.c0 .cat-name { color: var(--label0); }
+  .cat-card.c1 .cat-name { color: var(--label1); }
+  .cat-card.c2 .cat-name { color: var(--label2); }
+  .cat-card.c3 .cat-name { color: var(--label3); }
+  .cat-pct { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.5rem; }
+  .cat-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+
+  /* ── PIPELINE ── */
+  .pipeline { display: flex; flex-direction: column; gap: 0; margin: 2rem 0; }
+  .pipe-step {
+    display: flex; gap: 1.5rem; align-items: flex-start;
+    padding: 1.5rem; background: var(--bg2);
+    border: 1px solid var(--border); border-radius: 0;
+    transition: background .2s;
+  }
+  .pipe-step:first-child { border-radius: 12px 12px 0 0; }
+  .pipe-step:last-child  { border-radius: 0 0 12px 12px; }
+  .pipe-step + .pipe-step { border-top: none; }
+  .pipe-step:hover { background: var(--bg3); }
+  .pipe-num {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(91,141,238,0.15); border: 1px solid rgba(91,141,238,0.3);
+    color: var(--accent); font-size: 0.8rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .pipe-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.3rem; }
+  .pipe-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(91,141,238,0.1); color: var(--accent);
+    padding: 0.1em 0.4em; border-radius: 4px; font-size: 0.82em;
+  }
+
+  /* ── MODELS ── */
+  .model-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+  .model-table th {
+    text-align: left; padding: 0.75rem 1rem;
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); border-bottom: 1px solid var(--border);
+  }
+  .model-table td { padding: 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+  .model-table tr:last-child td { border-bottom: none; }
+  .model-table tr.winner td { background: rgba(91,141,238,0.06); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.2rem 0.6rem; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 600;
+  }
+  .badge-winner { background: rgba(74,222,128,0.12); color: var(--green); border: 1px solid rgba(74,222,128,0.25); }
+  .acc-bar-wrap { display: flex; align-items: center; gap: 0.75rem; }
+  .acc-bar { height: 6px; border-radius: 3px; background: var(--border); flex: 1; overflow: hidden; }
+  .acc-fill { height: 100%; border-radius: 3px; }
+  .acc-val { font-size: 0.82rem; font-weight: 600; min-width: 36px; }
+
+  /* ── TECH STACK ── */
+  .tech-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+  .tech-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 0.5rem 1rem;
+    font-size: 0.85rem; font-weight: 500; color: var(--text);
+  }
+  .tech-badge span { font-size: 1.1rem; }
+
+  /* ── CTA ── */
+  .cta-section {
+    text-align: center; padding: 5rem 1.5rem;
+    background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .cta-section h2 { margin-bottom: 0.75rem; }
+  .cta-section p { color: var(--muted); margin-bottom: 2rem; }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center; padding: 2rem 1.5rem;
+    color: var(--muted); font-size: 0.82rem; border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+  @media (max-width: 600px) {
+    .hero-stats { gap: 2rem; }
+    .nav-links { display: none; }
+    .pipe-step { flex-direction: column; gap: 0.75rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">Comment<span>Predict</span></a>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#categories">Categories</a></li>
+    <li><a href="#pipeline">Pipeline</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="https://huggingface.co/spaces/Anaysingh10/comment-category-predictor" target="_blank">Live Demo ↗</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">ML Competition Project</div>
+  <h1>Predicting <em>comment categories</em><br>with machine learning</h1>
+  <p class="hero-sub">
+    Built a text classification pipeline using LightGBM, TF-IDF, and feature engineering
+    to classify 198K+ comments into 4 categories with 91% accuracy.
+  </p>
+  <div class="btn-group">
+    <a class="btn btn-primary" href="https://huggingface.co/spaces/Anaysingh10/comment-category-predictor" target="_blank">
+      🚀 Try Live Demo
+    </a>
+    <a class="btn btn-secondary" href="https://kaggle.com/code/anaysingh10/23f3000736-notebook-t12026" target="_blank">
+      📓 View Notebook
+    </a>
+    <a class="btn btn-secondary" href="https://github.com/anay-repo" target="_blank">
+      GitHub ↗
+    </a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num">91%</div>
+      <div class="stat-label">Accuracy</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">198K</div>
+      <div class="stat-label">Training samples</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">4</div>
+      <div class="stat-label">Categories</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Models compared</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- PROBLEM -->
+<section id="problem">
+  <div class="section-label">The Challenge</div>
+  <h2>What was the task?</h2>
+  <p class="section-intro">
+    Given a dataset of 198,000+ user comments from an online platform — including text content,
+    interaction metadata, and internal system signals — predict which of 4 internal categories
+    the platform assigns to each comment.
+  </p>
+  <div class="categories" id="categories">
+    <div class="cat-card c0">
+      <div class="cat-emoji">💬</div>
+      <div class="cat-name">Normal</div>
+      <div class="cat-pct">~57% of data · Most common</div>
+      <div class="cat-desc">Typical comment with average engagement. Standard replies and opinions.</div>
+    </div>
+    <div class="cat-card c1">
+      <div class="cat-emoji">⭐</div>
+      <div class="cat-name">Popular</div>
+      <div class="cat-pct">High upvote engagement</div>
+      <div class="cat-desc">Well-written comments that received strong community approval — like a "top comment" on Reddit.</div>
+    </div>
+    <div class="cat-card c2">
+      <div class="cat-emoji">🔥</div>
+      <div class="cat-name">Controversial</div>
+      <div class="cat-pct">High upvotes AND downvotes</div>
+      <div class="cat-desc">Divisive comments that split the community. Strong reactions on both sides.</div>
+    </div>
+    <div class="cat-card c3">
+      <div class="cat-emoji">👻</div>
+      <div class="cat-name">Ignored</div>
+      <div class="cat-pct">Minimal engagement</div>
+      <div class="cat-desc">Short, throwaway comments with almost no community reaction.</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PIPELINE -->
+<section id="pipeline">
+  <div class="section-label">Methodology</div>
+  <h2>How it was built</h2>
+  <p class="section-intro">
+    A full ML pipeline from raw text to trained model — covering cleaning, feature engineering,
+    vectorization, model comparison, and hyperparameter tuning.
+  </p>
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-num">1</div>
+      <div>
+        <div class="pipe-title">Data Loading & EDA</div>
+        <div class="pipe-desc">Loaded 198K training samples. Explored label distribution (heavily imbalanced — 57% Normal), comment length patterns, upvote/downvote distributions, and feature correlations.</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">2</div>
+      <div>
+        <div class="pipe-title">Text Cleaning</div>
+        <div class="pipe-desc">Lowercased all text, stripped URLs, removed non-alphabetic characters, and normalized whitespace. Ensured consistent input for vectorization.</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">3</div>
+      <div>
+        <div class="pipe-title">Feature Engineering</div>
+        <div class="pipe-desc">Extracted <code>comment_len</code>, <code>word_count</code>, <code>exclaim_count</code>, <code>question_count</code> from raw text. Combined with provided numerical features: upvotes, downvotes, emoticon indicators, and internal platform signals.</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">4</div>
+      <div>
+        <div class="pipe-title">TF-IDF Vectorization</div>
+        <div class="pipe-desc">Built two vectorizers: <code>TfidfVectorizer(analyzer='word', ngram_range=(1,2))</code> with 10K features for word-level patterns, and <code>TfidfVectorizer(analyzer='char_wb', ngram_range=(3,4))</code> with 8K features for subword patterns. Combined with numerical features using sparse <code>hstack</code>.</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">5</div>
+      <div>
+        <div class="pipe-title">Model Comparison</div>
+        <div class="pipe-desc">Compared Logistic Regression, Naive Bayes, and LightGBM. LightGBM significantly outperformed others thanks to its ability to handle sparse high-dimensional features and class imbalance.</div>
+      </div>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">6</div>
+      <div>
+        <div class="pipe-title">Hyperparameter Tuning & Final Model</div>
+        <div class="pipe-desc">Used <code>RandomizedSearchCV</code> to find optimal parameters. Final model: <code>n_estimators=300</code>, <code>learning_rate=0.08</code>, <code>class_weight='balanced'</code>. Trained on full dataset for final predictions.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- RESULTS -->
+<section id="results">
+  <div class="section-label">Results</div>
+  <h2>Model comparison</h2>
+  <p class="section-intro">LightGBM outperformed all baseline models, achieving 91% validation accuracy on the held-out set.</p>
+  <table class="model-table">
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Accuracy</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Naive Bayes</td>
+        <td>
+          <div class="acc-bar-wrap">
+            <div class="acc-bar"><div class="acc-fill" style="width:72%; background:#6b7592;"></div></div>
+            <span class="acc-val" style="color:#6b7592;">72%</span>
+          </div>
+        </td>
+        <td style="color:var(--muted); font-size:0.85rem;">Fast baseline, weak on numerical features</td>
+      </tr>
+      <tr>
+        <td>Logistic Regression</td>
+        <td>
+          <div class="acc-bar-wrap">
+            <div class="acc-bar"><div class="acc-fill" style="width:81%; background:#6b7592;"></div></div>
+            <span class="acc-val" style="color:#6b7592;">81%</span>
+          </div>
+        </td>
+        <td style="color:var(--muted); font-size:0.85rem;">Solid baseline with TF-IDF features</td>
+      </tr>
+      <tr class="winner">
+        <td><strong>LightGBM</strong> <span class="badge badge-winner">✓ Best</span></td>
+        <td>
+          <div class="acc-bar-wrap">
+            <div class="acc-bar"><div class="acc-fill" style="width:91%; background:var(--accent);"></div></div>
+            <span class="acc-val" style="color:var(--accent);">91%</span>
+          </div>
+        </td>
+        <td style="color:var(--muted); font-size:0.85rem;">Handles sparse features + class imbalance well</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="section-label" style="margin-top:3rem;">Tech Stack</div>
+  <div class="tech-grid">
+    <div class="tech-badge"><span>🐍</span> Python</div>
+    <div class="tech-badge"><span>🐼</span> Pandas</div>
+    <div class="tech-badge"><span>🔢</span> NumPy</div>
+    <div class="tech-badge"><span>⚡</span> LightGBM</div>
+    <div class="tech-badge"><span>🔬</span> Scikit-learn</div>
+    <div class="tech-badge"><span>📝</span> TF-IDF</div>
+    <div class="tech-badge"><span>📊</span> Matplotlib / Seaborn</div>
+    <div class="tech-badge"><span>🤗</span> Hugging Face Spaces</div>
+    <div class="tech-badge"><span>🎛️</span> Gradio</div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="section-label" style="text-align:center;">Live Demo</div>
+  <h2>Try it yourself</h2>
+  <p>Type any comment and see the model classify it in real time.</p>
+  <div class="btn-group">
+    <a class="btn btn-primary" href="https://huggingface.co/spaces/Anaysingh10/comment-category-predictor" target="_blank">
+      🚀 Open Live Demo
+    </a>
+    <a class="btn btn-secondary" href="https://github.com/anay-repo" target="_blank">
+      View on GitHub ↗
+    </a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>Built by <strong>Anay Singh</strong> &nbsp;·&nbsp;
+    <a href="https://github.com/anay-repo" target="_blank">GitHub</a> &nbsp;·&nbsp;
+    <a href="https://huggingface.co/spaces/Anaysingh10/comment-category-predictor" target="_blank">Live Demo</a>
+  </p>
+  <p style="margin-top:0.5rem;">Comment Category Prediction Challenge · LightGBM · TF-IDF · 91% Accuracy</p>
+</footer>
+
+</body>
+</html>
